@@ -1,0 +1,62 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // المدير فقط: الحساب ذو الإيميل المحدد (وليس أي مستخدم مسجّل)
+    function isAdmin() {
+      return request.auth != null
+        && request.auth.token.email == "quiz@quiz.com";
+    }
+
+    function quizPath(quizId) {
+      return /databases/$(database)/documents/quizzes/$(quizId);
+    }
+
+    function quizIsActive(quizId) {
+      return exists(quizPath(quizId))
+        && get(quizPath(quizId)).data.active == true;
+    }
+
+    match /quizzes/{quizId} {
+      // أي أحد يقرأ اختبارًا واحدًا إذا كان مفعّلًا. المدير يقرأ كل شيء.
+      allow get: if isAdmin() || resource.data.active == true;
+      // قائمة الاختبارات والكتابة للمدير فقط
+      allow list, create, update, delete: if isAdmin();
+
+      match /submissions/{nameKey} {
+        // الإنشاء فقط (لا تعديل). إذا كانت النتيجة موجودة يُعدّ الطلب تعديلًا فيُرفض،
+        // وهذا يمنع تكرار الاسم نفسه.
+        allow create: if quizIsActive(quizId)
+          && request.resource.data.keys().hasOnly(['name', 'answers', 'score', 'total', 'createdAt'])
+          && request.resource.data.keys().hasAll(['name', 'answers', 'score', 'total', 'createdAt'])
+          && request.resource.data.name is string
+          && request.resource.data.name.size() >= 3
+          && request.resource.data.name.size() <= 100
+          && request.resource.data.answers is list
+          && request.resource.data.total is int
+          && request.resource.data.total == get(quizPath(quizId)).data.questions.size()
+          && request.resource.data.answers.size() == request.resource.data.total
+          && request.resource.data.score is int
+          && request.resource.data.score >= 0
+          && request.resource.data.score <= request.resource.data.total
+          && request.resource.data.createdAt == request.time
+          // يجب أن يُكتب سجل الاسم في نفس الدفعة (batch)
+          && existsAfter(/databases/$(database)/documents/quizzes/$(quizId)/names/$(nameKey));
+
+        allow read, update, delete: if isAdmin();
+      }
+
+      match /names/{nameKey} {
+        // أي أحد يتحقق من اسم واحد، أو ينشئه مرة واحدة
+        allow get: if true;
+        allow create: if quizIsActive(quizId)
+          && request.resource.data.keys().hasOnly(['createdAt'])
+          && request.resource.data.createdAt == request.time
+          // يجب أن تُكتب النتيجة في نفس الدفعة
+          && existsAfter(/databases/$(database)/documents/quizzes/$(quizId)/submissions/$(nameKey));
+        allow list, delete: if isAdmin();
+      }
+    }
+  }
+}
