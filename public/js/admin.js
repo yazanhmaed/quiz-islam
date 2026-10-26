@@ -407,14 +407,14 @@ function renderQuestions() {
       </div>
       <div class="field">
         <label for="q-text-${qi}">نص السؤال</label>
-        <textarea id="q-text-${qi}" data-field="text" rows="2" placeholder="اكتب السؤال هنا">${escapeHtml(q.text)}</textarea>
+        <textarea id="q-text-${qi}" class="auto-grow" data-field="text" rows="2" placeholder="اكتب السؤال هنا">${escapeHtml(q.text)}</textarea>
       </div>
       <label>الخيارات</label>
       ${q.options.map((opt, oi) => `
         <div class="opt-row ${q.correct === oi ? "is-correct" : ""}">
           <button type="button" class="correct-toggle ${q.correct === oi ? "on" : ""}" data-act="correct" data-o="${oi}"
                   aria-label="تحديد الخيار ${oi + 1} كإجابة صحيحة" aria-pressed="${q.correct === oi}">✓</button>
-          <input type="text" data-field="option" data-o="${oi}" maxlength="300" placeholder="الخيار ${oi + 1}" value="${escapeHtml(opt)}">
+          <textarea class="auto-grow opt-input" rows="1" data-field="option" data-o="${oi}" maxlength="300" placeholder="الخيار ${oi + 1}">${escapeHtml(opt)}</textarea>
           <button type="button" class="icon-btn danger" data-act="del-o" data-o="${oi}" aria-label="حذف الخيار ${oi + 1}" ${q.options.length <= 2 ? "disabled" : ""}>✕</button>
         </div>`).join("")}
       <button type="button" class="btn btn-light btn-small" data-act="add-o">➕ إضافة خيار</button>
@@ -426,10 +426,22 @@ function renderQuestions() {
     const q = e.questions[qi];
 
     card.querySelectorAll("[data-field]").forEach((input) => {
+      const isOption = input.dataset.field === "option";
+      if (isOption) {
+        // الخيار سطر واحد منطقيًا: Enter لا يضيف سطرًا جديدًا
+        input.onkeydown = (ev) => { if (ev.key === "Enter") ev.preventDefault(); };
+      }
       input.oninput = () => {
+        if (isOption && /[\r\n]/.test(input.value)) {
+          // نص ملصوق فيه أسطر جديدة: استبدالها بمسافة مع الحفاظ على موضع المؤشر
+          const pos = input.selectionStart;
+          input.value = input.value.replace(/\r\n|[\r\n]/g, " ");
+          input.setSelectionRange(pos, pos);
+        }
         if (input.dataset.field === "text") q.text = input.value;
         else q.options[Number(input.dataset.o)] = input.value;
         e.dirty = true;
+        autoGrow(input);
       };
     });
 
@@ -476,7 +488,19 @@ function renderQuestions() {
       };
     });
   });
+
+  box.querySelectorAll("textarea.auto-grow").forEach(autoGrow);
 }
+
+// جعل ارتفاع الحقل مساويًا لارتفاع محتواه
+function autoGrow(el) {
+  el.style.height = "auto";
+  el.style.height = el.scrollHeight + 4 + "px";
+}
+
+window.addEventListener("resize", () => {
+  document.querySelectorAll("textarea.auto-grow").forEach(autoGrow);
+});
 
 // التحقق وتجهيز البيانات للحفظ. يرجع null إذا وُجد خطأ.
 function validateEditor() {

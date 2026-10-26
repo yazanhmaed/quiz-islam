@@ -21,12 +21,14 @@
 
 * { box-sizing: border-box; }
 
-html { -webkit-text-size-adjust: 100%; }
+html { -webkit-text-size-adjust: 100%; font-size: 100%; }
+html[data-font="lg"] { font-size: 112.5%; }
+html[data-font="xl"] { font-size: 125%; }
 
 body {
   margin: 0;
   font-family: "IBM Plex Sans Arabic", Tahoma, "Segoe UI", sans-serif;
-  font-size: 19px;
+  font-size: 1.1875rem;
   line-height: 1.7;
   color: var(--text);
   background: var(--cream);
@@ -54,7 +56,8 @@ p { margin: 0 0 12px; }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
+  flex-wrap: wrap;
   min-height: 64px;
 }
 .brand {
@@ -418,8 +421,8 @@ input[type="email"], input[type="password"] { direction: ltr; text-align: right;
 .icon-btn[disabled] { opacity: 0.35; cursor: not-allowed; }
 .icon-btn.danger { color: var(--wrong); border-color: #e6a39d; }
 
-.opt-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
-.opt-row input { flex: 1; min-width: 0; }
+.opt-row { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 10px; }
+.opt-row .opt-input { flex: 1; min-width: 0; }
 .correct-toggle {
   flex: 0 0 52px;
   height: 52px;
@@ -432,7 +435,10 @@ input[type="email"], input[type="password"] { direction: ltr; text-align: right;
   cursor: pointer;
 }
 .correct-toggle.on { background: var(--correct); border-color: var(--correct); color: #fff; }
-.opt-row.is-correct input { border-color: var(--correct); background: var(--correct-bg); }
+.opt-row.is-correct .opt-input { border-color: var(--correct); background: var(--correct-bg); }
+textarea.auto-grow { resize: none; overflow: hidden; overflow-wrap: anywhere; }
+textarea.opt-input { min-height: 56px; line-height: 1.5; }
+.opt-row .correct-toggle, .opt-row .icon-btn { margin-top: 2px; }
 .q-error { color: var(--wrong); font-weight: 700; margin-top: 8px; }
 
 .sticky-save {
@@ -490,3 +496,28 @@ input[type="email"], input[type="password"] { direction: ltr; text-align: right;
 @media (min-width: 640px) {
   .actions-grid { grid-template-columns: repeat(3, 1fr); }
 }
+
+/* ===== زر حجم الخط ===== */
+.topbar-actions { position: relative; display: flex; align-items: center; gap: 8px; margin-inline-start: auto; }
+.font-control { position: static; }
+.topbar .btn { white-space: nowrap; }
+.font-menu {
+  position: absolute; top: calc(100% + 8px); left: 0; z-index: 50;
+  width: 230px; max-width: calc(100vw - 32px);
+  background: #fff; color: var(--text);
+  border: 2px solid var(--border); border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18); padding: 10px;
+}
+.font-menu-title { font-weight: 700; margin: 2px 6px 8px; font-size: 1rem; }
+.font-option {
+  display: flex; align-items: center; gap: 12px; width: 100%;
+  min-height: 56px; padding: 6px 12px; margin-bottom: 6px;
+  border: 2px solid var(--border); border-radius: 12px; background: #fff;
+  font: inherit; font-size: 1.05rem; color: var(--text); cursor: pointer; text-align: right;
+}
+.font-option:last-child { margin-bottom: 0; }
+.font-option.on { border-color: var(--green); background: var(--correct-bg); font-weight: 700; }
+.font-sample { width: 34px; text-align: center; font-weight: 700; color: var(--green-dark); line-height: 1; }
+.font-md .font-sample { font-size: 18px; }
+.font-lg .font-sample { font-size: 23px; }
+.font-xl .font-sample { font-size: 28px; }
